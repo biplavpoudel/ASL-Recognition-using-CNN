@@ -77,7 +77,9 @@ validation_dataset = tf.keras.utils.image_dataset_from_directory(
 #     shuffle=False,
 # )
 
-
+# Since the test_data didn't have subdirectories that reflected their class_names,
+# I couldn't use tf.keras.utils.image_dataset_from_directory()
+# So I had to create a function that extracts labels from file name and creates a dataset
 def test_dataset_generator():
     test_image_directory = r'D:\ASL Recognition using CNN\Input_Images\asl_alphabets\asl_alphabet_test'
     batch_size = 26
