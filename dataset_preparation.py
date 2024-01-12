@@ -1,5 +1,6 @@
 # Importing libraries I deemed necessary
 import tensorflow as tf
+from tensorflow.keras import layers
 import matplotlib.pyplot as plt
 import os
 
@@ -80,6 +81,8 @@ validation_dataset = tf.keras.utils.image_dataset_from_directory(
 # Since the test_data didn't have subdirectories that reflected their class_names,
 # I couldn't use tf.keras.utils.image_dataset_from_directory()
 # So I had to create a function that extracts labels from file name and creates a dataset
+
+
 def test_dataset_generator():
     test_image_directory = r'D:\ASL Recognition using CNN\Input_Images\asl_alphabets\asl_alphabet_test'
     batch_size = 26
@@ -139,3 +142,31 @@ for images, labels in test_dataset:
         plt.title(labels[i].numpy().decode())
         plt.axis('off')
 # plt.show()
+
+# Creating Preprocessing Layers
+data_augmentation = tf.keras.Sequential([
+    layers.RandomFlip("horizontal"),
+    layers.RandomRotation(0.2)
+])
+
+data_rescaling = tf.keras.Sequential([
+     layers.Rescaling(1. / 255)
+])
+
+# Applying Preprocessing Layers to the dataset
+# We only augment the training data!
+# Configuring the datasets for performance, using parallel reads and buffered prefetching ....
+# ... to yield batches from disk without I/O become blocking.
+
+AUTOTUNE = tf.data.AUTOTUNE
+
+
+def preprocess(ds, augment=False):
+    if augment:
+        ds.map(lambda image, label: (data_augmentation(image, training=True), label), num_parallel_calls=AUTOTUNE)
+    return ds.prefetch(buffer_size=AUTOTUNE)
+
+
+train_dataset = preprocess(train_dataset, augment=True)
+valid_dataset = preprocess(validation_dataset)
+test_dataset = preprocess(test_dataset)
