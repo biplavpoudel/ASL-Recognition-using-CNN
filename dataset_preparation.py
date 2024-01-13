@@ -7,9 +7,9 @@ import os
 # The training data set contains 78,000 images which are 200x200 pixels. There are 26 classes for the letters A-Z.
 # The test data set contains a mere 26 images, to encourage the use of real-world test images.
 
-# for dirname, _, filenames in os.walk(r'D:\ASL Recognition using CNN\Input_Images'):
-#     for filename in filenames:
-#         print(os.path.join(dirname, filename))
+for dirname, _, filenames in os.walk(r'D:\ASL Recognition using CNN\Input_Images'):
+    for filename in filenames:
+        print(os.path.join(dirname, filename))
 
 
 # def imgPaths(filepath):
@@ -69,6 +69,7 @@ validation_dataset = tf.keras.utils.image_dataset_from_directory(
     validation_split=0.2,
     subset='validation'
 )
+
 # test_dataset = tf.keras.utils.image_dataset_from_directory(
 #     directory=r'D:\ASL Recognition using CNN\Input_Images\asl_alphabets\asl_alphabet_test',
 #     labels=None,
@@ -163,10 +164,10 @@ AUTOTUNE = tf.data.AUTOTUNE
 
 def preprocess(ds, augment=False):
     if augment:
-        ds.map(lambda image, label: (data_augmentation(image, training=True), label), num_parallel_calls=AUTOTUNE)
+        ds = ds.map(lambda image, label: (data_augmentation(image, training=True), label), num_parallel_calls=AUTOTUNE)
     return ds.prefetch(buffer_size=AUTOTUNE)
 
 
 train_dataset = preprocess(train_dataset, augment=True)
-valid_dataset = preprocess(validation_dataset)
+validation_dataset = preprocess(validation_dataset)
 test_dataset = preprocess(test_dataset)
