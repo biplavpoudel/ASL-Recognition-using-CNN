@@ -5,15 +5,16 @@ import matplotlib.pyplot as plt
 import os
 import mediapipe as mp
 import cv2
+import numpy as np
 
 # The training data set contains 78,000 images which are 200x200 pixels. There are 26 classes for the letters A-Z.
 # The test data set contains a mere 26 images, to encourage the use of real-world test images.
 
-for dirname, _, filenames in os.walk(r'D:\ASL Recognition using CNN\Input_Images'):
-    print("Data Loading....")
-    for filename in filenames:
-        print(os.path.join(dirname, filename))
-    print("Data Successfully Loaded")
+# for dirname, _, filenames in os.walk(r'D:\ASL Recognition using CNN\Input_Images'):
+#     print("Data Loading....")
+#     for filename in filenames:
+#         print(os.path.join(dirname, filename))
+#     print("Data Successfully Loaded")
 
 
 train_dataset = tf.keras.utils.image_dataset_from_directory(
@@ -95,14 +96,14 @@ test_dataset = test_dataset_generator()
 #     print("Batch of Labels:", labels)
 
 
-# Let's visualize the data in test_dataset
-# plt.figure(figsize=(10, 10))
-# for images, labels in test_dataset:
-#     for i in range(9):
-#         ax = plt.subplot(3, 3, i+1)
-#         plt.imshow(images[i].numpy().astype("uint8"))
-#         plt.title(labels[i].numpy().decode())
-#         plt.axis('off')
+# Let's visualize the data in train_dataset
+plt.figure(figsize=(10, 10))
+for images, labels in train_dataset.take(1):
+    for i in range(9):
+        ax = plt.subplot(3, 3, i+1)
+        plt.imshow(images[i].numpy().astype("uint8"))
+        plt.title(train_dataset.class_names[i])
+        plt.axis('off')
 # plt.show()
 
 
@@ -134,28 +135,16 @@ train_preprocessed_dataset = preprocess(train_dataset, augment=True)
 validation_preprocessed_dataset = preprocess(validation_dataset)
 test_preprocessed_dataset = preprocess(test_dataset)
 
-# Creating Mediapipe Hands Landmark Layers
-mp_hands = mp.solutions.hands
-hands = mp_hands.Hands()
+
+# Let's visualize the data in train_preprocessed_dataset
+plt.figure(figsize=(10, 10))
+for images, labels in train_preprocessed_dataset.take(1):
+    for i in range(9):
+        ax = plt.subplot(3, 3, i+1)
+        plt.imshow(images[i].numpy().astype("uint8"))
+        plt.title(train_dataset.class_names[labels[i]])
+        # Label corresponds to attribute class_names of dataset object
+        plt.axis('off')
+# plt.show()
 
 
-def feature_extraction(image):
-    img = image.numpy()
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-    results = hands.process(img)
-
-    if results.multi_hand_landmarks:
-        landmarks = [landmark.x for hand_landmarks in results.multi_hand_landmarks for landmark in hand_landmarks.landmark]
-        return landmarks
-    else:
-        # If no hands are detected, return a placeholder
-        # 21 hand landmarks of 3 coordinates each
-        return [0.0] * 63
-
-
-train_landmark_dataset = train_dataset.map(lambda x, y: (tf.py_function(feature_extraction, [x], tf.float32), y))
-validation_landmark_dataset = validation_dataset.map(lambda x, y: (tf.py_function(feature_extraction, [x], tf.float32), y))
-
-train_combined_dataset = tf.data.Dataset.zip((train_preprocessed_dataset, train_landmark_dataset))
-validation_combined_dataset = tf.data.Dataset.zip((validation_preprocessed_dataset, validation_landmark_dataset))
