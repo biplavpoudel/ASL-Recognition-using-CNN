@@ -5,15 +5,18 @@ import matplotlib.pyplot as plt
 import os
 import mediapipe as mp
 import cv2
+import numpy as np
+from mediapipe.tasks import python
+from mediapipe.tasks.python import vision
 
 # The training data set contains 78,000 images which are 200x200 pixels. There are 26 classes for the letters A-Z.
 # The test data set contains a mere 26 images, to encourage the use of real-world test images.
 
-for dirname, _, filenames in os.walk(r'D:\ASL Recognition using CNN\Input_Images'):
-    print("Data Loading....")
-    for filename in filenames:
-        print(os.path.join(dirname, filename))
-    print("Data Successfully Loaded")
+# for dirname, _, filenames in os.walk(r'D:\ASL Recognition using CNN\Input_Images'):
+#     print("Data Loading....")
+#     for filename in filenames:
+#         print(os.path.join(dirname, filename))
+#     print("Data Successfully Loaded")
 
 
 train_dataset = tf.keras.utils.image_dataset_from_directory(
@@ -134,28 +137,58 @@ train_preprocessed_dataset = preprocess(train_dataset, augment=True)
 validation_preprocessed_dataset = preprocess(validation_dataset)
 test_preprocessed_dataset = preprocess(test_dataset)
 
-# Creating Mediapipe Hands Landmark Layers
-mp_hands = mp.solutions.hands
-hands = mp_hands.Hands()
+# Create a HandLandmarker object
+base_options = python.BaseOptions(model_asset_path=r'model\Landmarker_model\hand_landmarker.task')
+options = vision.HandLandmarkerOptions(base_options=base_options, num_hands=1)
+detector = vision.HandLandmarker.create_from_options(options)
 
 
-def feature_extraction(image):
-    img = image.numpy()
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+def extract_hand_landmarks(image, label):
+    # img = image.numpy()
+    img_uint8 = np.uint8(image)
+    img_rgb = cv2.cvtColor(img_uint8, cv2.COLOR_BGR2RGB)
+    all_landmarks = []
+    # Load the input image
+    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=img_rgb)
 
-    results = hands.process(img)
+    plt.show()
 
-    if results.multi_hand_landmarks:
-        landmarks = [landmark.x for hand_landmarks in results.multi_hand_landmarks for landmark in hand_landmarks.landmark]
-        return landmarks
+    # Detect hand landmarks from the input image
+    detection_result = detector.detect(mp_image)
+    hand_landmarks_result = detection_result.hand_landmarks
+    # print(hand_landmarks_result)
+
+    for landmarks in hand_landmarks_result:
+        # Extract (x, y, z) coordinates for each NormalizedLandmark
+        landmarks = [(landmark.x, landmark.y, landmark.z) for landmark in landmarks]
+
+        all_landmarks.append(landmarks)
+        # print(all_landmarks)
     else:
         # If no hands are detected, return a placeholder
-        # 21 hand landmarks of 3 coordinates each
-        return [0.0] * 63
+        landmarks = [0.0] * 63  # Adjust the size based on the actual number of landmarks
+        all_landmarks.append(landmarks)
+
+    return all_landmarks, label
 
 
-train_landmark_dataset = train_dataset.map(lambda x, y: (tf.py_function(feature_extraction, [x], tf.float32), y))
-validation_landmark_dataset = validation_dataset.map(lambda x, y: (tf.py_function(feature_extraction, [x], tf.float32), y))
+# Assuming you have already loaded train_dataset and validation_dataset
 
-train_combined_dataset = tf.data.Dataset.zip((train_preprocessed_dataset, train_landmark_dataset))
-validation_combined_dataset = tf.data.Dataset.zip((validation_preprocessed_dataset, validation_landmark_dataset))
+# Map the HandLandmarker function to the landmark dataset
+# train_landmark_dataset = train_dataset.map(lambda x, y: (tf.py_function(extract_hand_landmarks, [x], tf.float32), y))
+# validation_landmark_dataset = validation_dataset.map(lambda x, y: (tf.py_function(extract_hand_landmarks, [x], tf.float32), y))
+
+train_landmark_dataset = train_dataset.map(lambda x, y: (tf.py_function(extract_hand_landmarks, [x, y], (tf.float32, tf.int32))))
+# validation_landmark_dataset = validation_dataset.map(lambda x, y: (tf.py_function(extract_hand_landmarks, [x, y], (tf.float32, tf.int32))))
+
+for all_landmarks, labels in train_landmark_dataset.take(1):
+    print(all_landmarks)
+    print(labels)
+
+# image = cv2.imread(r"D:\ASL Recognition using CNN\Input_Images\asl_alphabets\asl_alphabet_train\A\A1.jpg")
+# landmarks11 = extract_hand_landmarks(image)
+# print(len(landmarks11))
+
+
+# train_combined_dataset = tf.data.Dataset.zip((train_preprocessed_dataset, train_landmark_dataset))
+# validation_combined_dataset = tf.data.Dataset.zip((validation_preprocessed_dataset, validation_landmark_dataset))
