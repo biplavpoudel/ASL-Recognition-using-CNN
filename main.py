@@ -1,3 +1,5 @@
+# Compare cv2 frame with model
+
 import cv2
 import mediapipe as mp
 import numpy as np
@@ -65,5 +67,3 @@ while True:
 
 cap.release()
 cv2.destroyAllWindows()
-
-
