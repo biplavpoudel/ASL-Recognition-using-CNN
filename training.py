@@ -87,3 +87,5 @@ history = model.fit(train_preprocessed_dataset,
                     epochs=initial_epochs,
                     validation_data=validation_preprocessed_dataset)
 
+model.save(r"model\ASL model\model.h5")
+
