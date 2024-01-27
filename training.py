@@ -1,6 +1,7 @@
 from dataset_preparation import train_preprocessed_dataset, validation_preprocessed_dataset, test_preprocessed_dataset
 import tensorflow as tf
 import matplotlib.pyplot as plt
+from tensorflow.keras.callbacks import CSVLogger
 
 
 # Implementing Transfer Learning from pretrained model MobileNetV2
@@ -19,7 +20,7 @@ def rescale_img(img, label):
 
 train_preprocessed_dataset = train_preprocessed_dataset.map(rescale_img, num_parallel_calls=tf.data.AUTOTUNE)
 validation_preprocessed_dataset = validation_preprocessed_dataset.map(rescale_img, num_parallel_calls=tf.data.AUTOTUNE)
-
+print("Datasets rescaled  from [0,255] to [-1,1] range...")
 
 # Creating base model from the pre-trained model MobileNet V2
 IMG_SHAPE = IMG_SIZE + (3,)
@@ -66,13 +67,14 @@ x = global_average_layer(x)
 x = tf.keras.layers.Dropout(0.2)(x)
 outputs = prediction_layer(x)
 model = tf.keras.Model(inputs, outputs)
-
+print("Model has been created and is compiling now...")
 
 # Compile the model
 base_learning_rate = 0.0001
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
               loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-              metrics=['accuracy'])
+              metrics=tf.keras.metrics.SparseCategoricalAccuracy(name='accuracy'))
+print("Model successfully compiled...")
 
 # Print model summary
 model.summary()
@@ -83,9 +85,44 @@ loss0, accuracy0 = model.evaluate(validation_preprocessed_dataset)
 print("initial loss: {:.2f}".format(loss0))
 print("initial accuracy: {:.2f}".format(accuracy0))
 
+csv_logger = CSVLogger("training_history.csv")
 history = model.fit(train_preprocessed_dataset,
                     epochs=initial_epochs,
-                    validation_data=validation_preprocessed_dataset)
+                    validation_data=validation_preprocessed_dataset,
+                    callbacks=[csv_logger])
 
-model.save(r"model\ASL model\model.h5")
+
+# model.save(r"model\ASL_model\model.h5")
+model.save(r"model\ASL_model\model.keras")
+print("Model saved successfully")
+
+# The learning curves of the training and validation accuracy/loss
+# when using the MobileNetV2 base model as a fixed feature extractor.
+
+acc = history.history['accuracy']
+val_acc = history.history['val_accuracy']
+
+loss = history.history['loss']
+val_loss = history.history['val_loss']
+
+plt.figure(figsize=(8, 8))
+plt.subplot(2, 1, 1)
+plt.plot(acc, label='Training Accuracy')
+plt.plot(val_acc, label='Validation Accuracy')
+plt.legend(loc='lower right')
+plt.ylabel('Accuracy')
+plt.ylim([min(plt.ylim()), 1])
+plt.title('Training and Validation Accuracy')
+
+plt.subplot(2, 1, 2)
+plt.plot(loss, label='Training Loss')
+plt.plot(val_loss, label='Validation Loss')
+plt.legend(loc='upper right')
+plt.ylabel('Cross Entropy')
+plt.ylim([0,1.0])
+plt.title('Training and Validation Loss')
+plt.xlabel('epoch')
+plt.show()
+
+
 

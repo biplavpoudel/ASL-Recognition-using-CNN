@@ -3,20 +3,19 @@ import tensorflow as tf
 from tensorflow.keras import layers
 import matplotlib.pyplot as plt
 import os
-import mediapipe as mp
 import cv2
 import numpy as np
 
 # The training data set contains 78,000 images which are 200x200 pixels. There are 26 classes for the letters A-Z.
 # The test data set contains a mere 26 images, to encourage the use of real-world test images.
 
-# for dirname, _, filenames in os.walk(r'D:\ASL Recognition using CNN\Input_Images'):
-#     print("Data Loading....")
-#     for filename in filenames:
-#         print(os.path.join(dirname, filename))
-#     print("Data Successfully Loaded")
+for dirname, _, filenames in os.walk(r'D:\ASL Recognition using CNN\Input_Images'):
+    print("Data Loading....")
+    for filename in filenames:
+        print(os.path.join(dirname, filename))
+    print("Data Successfully Loaded")
 
-
+print("Now onto creating datasets for the tensorflow model...\n")
 train_dataset = tf.keras.utils.image_dataset_from_directory(
     directory=r'D:\ASL Recognition using CNN\Input_Images\asl_alphabets\asl_alphabet_train',
     labels='inferred',
@@ -29,6 +28,7 @@ train_dataset = tf.keras.utils.image_dataset_from_directory(
     validation_split=0.2,
     subset='training'
 )
+print("\nTrain Dataset created...")
 validation_dataset = tf.keras.utils.image_dataset_from_directory(
     directory=r'D:\ASL Recognition using CNN\Input_Images\asl_alphabets\asl_alphabet_train',
     labels='inferred',
@@ -41,6 +41,7 @@ validation_dataset = tf.keras.utils.image_dataset_from_directory(
     validation_split=0.2,
     subset='validation'
 )
+print("\nValidation Dataset created...")
 
 # test_dataset = tf.keras.utils.image_dataset_from_directory(
 #     directory=r'D:\ASL Recognition using CNN\Input_Images\asl_alphabets\asl_alphabet_test',
@@ -86,6 +87,7 @@ def test_dataset_generator():
 
 
 test_dataset = test_dataset_generator()
+print("Test dataset created successfully...")
 
 # for images, labels in test_dataset:
 #     labels = [label.numpy().decode() for label in labels]
@@ -134,7 +136,7 @@ def preprocess(ds, augment=False):
 train_preprocessed_dataset = preprocess(train_dataset, augment=True)
 validation_preprocessed_dataset = preprocess(validation_dataset)
 test_preprocessed_dataset = preprocess(test_dataset)
-
+print("\nDatasets preprocessed successfully...")
 
 # Let's visualize the data in train_preprocessed_dataset
 plt.figure(figsize=(10, 10))
