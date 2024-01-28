@@ -9,7 +9,7 @@ from tensorflow.keras.callbacks import CSVLogger
 # Rescaling pixel values from [0, 255] to [-1, 1] as:
 rescale = tf.keras.layers.Rescaling(1. / 127.5, offset=-1)
 
-IMG_SIZE = (200, 200)
+IMG_SIZE = (224, 224)
 BATCH_SIZE = 32
 
 
@@ -23,7 +23,9 @@ validation_preprocessed_dataset = validation_preprocessed_dataset.map(rescale_im
 print("Datasets rescaled  from [0,255] to [-1,1] range...")
 
 # Creating base model from the pre-trained model MobileNet V2
+print("Image shape is:", IMG_SIZE)
 IMG_SHAPE = IMG_SIZE + (3,)
+print("Input shape is:", IMG_SHAPE)
 base_model = tf.keras.applications.MobileNetV2(input_shape=IMG_SHAPE,
                                                include_top=False,
                                                weights='imagenet')
@@ -37,7 +39,7 @@ print("The Feature Batch Shape is: ", feature_batch.shape)
 
 # Freezing the Convolutional base to use as a feature extractor...
 # ...as freezing prevents weights from being updated during training
-# Additionally, we add a classifier on top of the frozen base and train the top-level classifier
+# Additionally, we add a classifier on top of the frozen base and train the top-level classifier.
 
 base_model.trainable = False
 
@@ -61,7 +63,7 @@ print("The Prediction Batch Shape is: ", prediction_batch.shape)
 
 # Now we create a model by chaining together base_model and feature extractor layers
 
-inputs = tf.keras.layers.Input(shape=(200, 200, 3))
+inputs = tf.keras.layers.Input(shape=(224, 224, 3))
 x = base_model(inputs, training=False)
 x = global_average_layer(x)
 x = tf.keras.layers.Dropout(0.2)(x)
@@ -69,10 +71,18 @@ outputs = prediction_layer(x)
 model = tf.keras.Model(inputs, outputs)
 print("Model has been created and is compiling now...")
 
-# Compile the model
+# Learning Rate Schedule:
 base_learning_rate = 0.0001
-model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
-              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+    initial_learning_rate=base_learning_rate,
+    decay_steps=10000,
+    decay_rate=0.9,
+    staircase=True)
+optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
+
+# Compile the model
+model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=lr_schedule),
+               loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
               metrics=tf.keras.metrics.SparseCategoricalAccuracy(name='accuracy'))
 print("Model successfully compiled...")
 
@@ -119,7 +129,7 @@ plt.plot(loss, label='Training Loss')
 plt.plot(val_loss, label='Validation Loss')
 plt.legend(loc='upper right')
 plt.ylabel('Cross Entropy')
-plt.ylim([0,1.0])
+plt.ylim([0, 1.0])
 plt.title('Training and Validation Loss')
 plt.xlabel('epoch')
 plt.show()

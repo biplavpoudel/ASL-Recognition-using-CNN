@@ -20,7 +20,7 @@ train_dataset = tf.keras.utils.image_dataset_from_directory(
     directory=r'D:\ASL Recognition using CNN\Input_Images\asl_alphabets\asl_alphabet_train',
     labels='inferred',
     label_mode='int',
-    image_size=(200, 200),
+    image_size=(224, 224),
     color_mode='rgb',
     batch_size=32,
     shuffle=True,
@@ -33,7 +33,7 @@ validation_dataset = tf.keras.utils.image_dataset_from_directory(
     directory=r'D:\ASL Recognition using CNN\Input_Images\asl_alphabets\asl_alphabet_train',
     labels='inferred',
     label_mode='int',
-    image_size=(200, 200),
+    image_size=(224, 224),
     color_mode='rgb',
     batch_size=32,
     shuffle=False,
@@ -60,7 +60,7 @@ print("\nValidation Dataset created...")
 def test_dataset_generator():
     test_image_directory = r'D:\ASL Recognition using CNN\Input_Images\asl_alphabets\asl_alphabet_test'
     batch_size = 26
-    img_height, img_width = 200, 200
+    img_height, img_width = 224, 224
 
     # Get the list of test image file paths
     test_filepaths = tf.data.Dataset.list_files(os.path.join(test_image_directory, '*.jpg'))
